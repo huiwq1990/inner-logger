@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  *  内置日志类
  *
- *  通过com.alibaba.middleware.jingwei.common.logger.LogFactory
+ *  通过com.alibaba.middleware.innerlog.LoggerFactory
  *  的getLogger方法获得。
  *
  *  注: 内置的innerLogger 其实就是SL4J的Logger
