@@ -65,15 +65,15 @@ LogFactory.getLogger(String logName) 或者 LogFactory.getLogger(Class<?> clazz)
 使用例子：
 ===
 
-public static void main(String[] args)  {
-        //classpath下有这个xxx-logback.xml的配置文件
-        LogFactory.initByClassResource("xxx-logback.xml");
-        Logger logger = LogFactory.getLogger(“xxxLogName”);
-        logger.setLevel(LogLevel.ERROR);
-        logger.error("error!!");
-        logger.setLevel(LogLevel.WARN);
-        logger.warn("warn!!");
-        logger.setLevel(LogLevel.INFO);
-        logger.info("info!!");
-    }
+    public static void main(String[] args)  {
+            //classpath下有这个xxx-logback.xml的配置文件
+            LogFactory.initByClassResource("xxx-logback.xml");
+            Logger logger = LogFactory.getLogger(“xxxLogName”);
+            logger.setLevel(LogLevel.ERROR);
+            logger.error("error!!");
+            logger.setLevel(LogLevel.WARN);
+            logger.warn("warn!!");
+            logger.setLevel(LogLevel.INFO);
+            logger.info("info!!");
+        }
 
