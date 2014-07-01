@@ -48,7 +48,7 @@ import org.apache.commons.lang.reflect.MethodUtils;
  *          Date: 14-6-17 Time: 15:47 version 1.0
  */
 
-public class LogFactory {
+public class LoggerFactory {
 
 	private static final LoggerClassLoader innerLoader = new LoggerClassLoader();
 	private static final String SYSTEM_LONGBACK_CONFIG_FILE_KEY = "com.alibaba.inner.logback.config.file";
@@ -63,6 +63,7 @@ public class LogFactory {
 	 */
 	private static Object innerFactory;
 	private static Class<?> sl4jLogFactoryClass;
+	private static boolean configure;
 
 	/**
 	 * 该方法适用于直接给定classPath下logback配置文件classpath路径名称 配置文件来对日志做Configure
@@ -91,6 +92,10 @@ public class LogFactory {
 	public synchronized static void doConfigure(LogConfigure logConfigure) {
 		if (null == innerFactory) {
 			bindSl4j();
+		}
+		if(configure){
+			//已经配置configure过
+			return;
 		}
 		InputStream inputStream = null;
 		String systemConfPath = null;
@@ -122,6 +127,7 @@ public class LogFactory {
 				// 进行Configure
 				MethodUtils.invokeMethod(JoranConfObj, "doConfigure",
 						inputStream);
+				configure=true;
 			} catch (Exception e) {
 				throw new RuntimeException("doConfigure logback Error! ", e);
 			} finally {
@@ -244,8 +250,8 @@ public class LogFactory {
 	}
 
 	public static void main(String[] args)  {
-		LogFactory.doConfigure(null);
-		Logger logger = LogFactory.getLogger(LogFactory.class);
+		LoggerFactory.doConfigure(null);
+		Logger logger = LoggerFactory.getLogger(LoggerFactory.class);
 		logger.setLevel(LogLevel.ERROR);
 		logger.error("error!!");
 		logger.setLevel(LogLevel.WARN);

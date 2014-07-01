@@ -16,7 +16,7 @@
 
 * 第一步 指定logback配置文件或者给出LogConfigure 具体实现类初始化日志系统（非必须如不指定会使用内置的loback配置文件）
 
-指定配置文件方式以下com.alibaba.middleware.innerlog.LogFactory的两种方任选其一：
+指定配置文件方式以下com.alibaba.middleware.innerlog.LoggerFactory的两种方任选其一：
 
     /**
      * 该方法适用于直接给定classPath下logback配置文件classpath路径名称 配置文件来对日志做Configure
@@ -40,7 +40,7 @@
 
 例如：
 
-    LogFactory.doConfigure(new LogConfigure() {
+    LoggerFactory.doConfigure(new LogConfigure() {
                 public InputStream configure() {
                     InputStream inputStream = LoggerFactory.class.getClassLoader()
                             .getResourceAsStream("loglib/inner-jwtask-logback.xml");
@@ -60,14 +60,14 @@
 
 * 第二步获取logger对象
 
-LogFactory.getLogger(String logName) 或者 LogFactory.getLogger(Class<?> clazz) 
+LoggerFactory.getLogger(String logName) 或者 LoggerFactory.getLogger(Class<?> clazz) 
 
 使用例子：
 ===
 
     public static void main(String[] args)  {
             //classpath下有这个xxx-logback.xml的配置文件
-            LogFactory.initByClassResource("xxx-logback.xml");
+            LoggerFactory.initByClassResource("xxx-logback.xml");
             Logger logger = LogFactory.getLogger(“xxxLogName”);
             logger.setLevel(LogLevel.ERROR);
             logger.error("error!!");
