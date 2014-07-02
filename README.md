@@ -139,6 +139,6 @@ LoggerFactory.getLogger(String logName,String appKey) Лђеп LoggerFactory.getLogg
          * @return
          */
         public static Logger getLogger(Class<?> clazz) {
-            return LoggerFactory.getLogger(clazz.getName(), JW_LOG_APP_KEY);
+            return LoggerFactory.getLogger(clazz, JW_LOG_APP_KEY);
         }
     }
