@@ -11,6 +11,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
+ * å†…ç½®logçš„libåŠ è½½classLoader,ä½¿ç”¨æ—¶æ ¹æ®appKeyæ¥åˆ’åˆ†
+ *
  * User: <a href="mailto:qihao@taobao.com">qihao</a>
  * Date: 14-7-2
  * Time: 12:52
@@ -23,21 +25,21 @@ public class LoggerContext extends ClassLoader {
 	private final static String[] LOGBACK_LIBS = new String[] {
 			SL4J_API_LIB, LOGBACK_CLASSIC_LIB, LOGBACK_CORE_LIB };
 	/**
-	 * method»º´æ²¿·Ö,ÓÃÀ´¼ÓËÙ·´Éäµ÷ÓÃ
+	 * methodç¼“å­˜éƒ¨åˆ†,ç”¨æ¥åŠ é€Ÿåå°„è°ƒç”¨
 	 * */
 	private Method logMethod;
 
 	/**
-	 * SL4°ó¶¨ºÍconfigureÓÃµ½µÄ±äÁ¿
+	 * SL4ç»‘å®šå’Œconfigureç”¨åˆ°çš„å˜é‡
 	 */
 	private Object innerFactory;
 	private Class<?> sl4jLogFactoryClass;
 
-	// ±ê¼Ç¸ÃclassLoader¶ÔÓ¦µÄlogÏµÍ³ÊÇ·ñÒÑ¾­configure¹ı
+	// æ ‡è®°è¯¥classLoaderå¯¹åº”çš„logç³»ç»Ÿæ˜¯å¦å·²ç»configureè¿‡
 	private boolean configure = false;
 
 	protected LoggerContext() {
-		// È¥µô¸¸µÄclassLoader,·ÀÖ¹¸ÉÈÅÒµÎñµÄclassLoader
+		// å»æ‰çˆ¶çš„classLoader,é˜²æ­¢å¹²æ‰°ä¸šåŠ¡çš„classLoader
 		super(null);
 	}
 
@@ -51,7 +53,7 @@ public class LoggerContext extends ClassLoader {
 				JarFile jarFile = new JarFile(new File(jarUrl.toURI()));
 				JarEntry entry = jarFile.getJarEntry(StringUtils.replace(
 						name, ".", "/") + ".class");
-				// µ±Ç°JARÕÒ²»µ½ÖØÊÔµ½ÏÂÒ»¸ö
+				// å½“å‰JARæ‰¾ä¸åˆ°é‡è¯•åˆ°ä¸‹ä¸€ä¸ª
 				if (null == entry) {
 					continue;
 				}
