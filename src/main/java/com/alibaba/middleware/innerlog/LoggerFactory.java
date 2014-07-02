@@ -1,18 +1,14 @@
 package com.alibaba.middleware.innerlog;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.ClassUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.apache.commons.lang.reflect.MethodUtils;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 日志工厂类,采用日志框架sl4j和日志系统logback
@@ -22,7 +18,9 @@ import org.apache.commons.lang.reflect.MethodUtils;
  * 1.日志冲突问题: 基于classLoader隔离日志系统,用自己的classLoader加载内置的sl4j和logback
  * 不会跟同JVM中其他的日志框架和日志系统冲突
  *
- * 2.日志重新configure 定制日志输出配置:
+ * 2.相同JVM多个innerLogger通过appKey隔离支持按照appKey进行configure,且互不干扰。
+ *
+ * 3.日志重新configure 定制日志输出配置:
  *
  * 使用initByClassResource 或者initByFileSystem 方法指定具体的logback的配置 文件进行configure
  *
@@ -30,18 +28,18 @@ import org.apache.commons.lang.reflect.MethodUtils;
  *
  * setp 1: 如果需要重新configure 日志系统,则需要在最开始调用
  *
- * LogFactory.doConfigure(LogConfigure logConfigure)
+ * LogFactory.doConfigure(LogConfigure logConfigure,String appKey)
  *
  * 或者使用以下的方式
  *
- * 一、指定配置文件初始化: LogFactory.initByClassResource(final String classResource)
- * 
- * 二、LogFactory.initByFileSystem(final String configFilePath)
+ * 一、指定配置文件初始化: LogFactory.initByClassResource(final String classResource,String appKey)
+ *
+ * 二、LogFactory.initByFileSystem(final String configFilePath,String appKey)
  *
  *
  * setp 2: 获取日志方法
  *
- * LogFactory.getLogger(String name),LogFactory.getLogger(Class<?> clazz)
+ * LogFactory.getLogger(String name,String appKey),LogFactory.getLogger(Class<?> clazz,String appKey)
  *
  * @author: <a href="mailto:qihao@taobao.com">qihao</a>
  *
@@ -50,37 +48,28 @@ import org.apache.commons.lang.reflect.MethodUtils;
 
 public class LoggerFactory {
 
-	private static final LoggerClassLoader innerLoader = new LoggerClassLoader();
 	private static final String SYSTEM_LONGBACK_CONFIG_FILE_KEY = "com.alibaba.inner.logback.config.file";
-
-	/**
-	 * method缓存部分,用来加速反射调用
-	 * */
-	private static Method logMethod;
-
-	/**
-	 * SL4绑定和configure用到的变量
-	 */
-	private static Object innerFactory;
-	private static Class<?> sl4jLogFactoryClass;
-	private static boolean configure;
+	private static final Map<String/* appKey */, LoggerContext> LOGGER_CONTEXT_LOADERS = new HashMap<String, LoggerContext>();
 
 	/**
 	 * 该方法适用于直接给定classPath下logback配置文件classpath路径名称 配置文件来对日志做Configure
-	 * 
+	 *
 	 * @param classResource
 	 */
-	public static void initByClassResource(final String classResource) {
-		doConfigure(new DefaultLogConfigure(classResource));
+	public static void initByClassResource(final String classResource,
+			String appKey) {
+		doConfigure(new DefaultLogConfigure(classResource), appKey);
 	}
 
 	/**
 	 * 该方法适用于直接给定文件系统下logback配置文件绝对路径 配置文件来对日志做Configure
-	 * 
-	 * @param classResource
+	 *
+	 * @param configFilePath
 	 */
-	public static void initByFileSystem(final String configFilePath) {
-		doConfigure(new DefaultLogConfigure(configFilePath, Boolean.TRUE));
+	public static void initByFileSystem(final String configFilePath,
+			String appKey) {
+		doConfigure(new DefaultLogConfigure(configFilePath, Boolean.TRUE),
+				appKey);
 	}
 
 	/**
@@ -89,16 +78,19 @@ public class LoggerFactory {
 	 *
 	 * @param logConfigure
 	 */
-	public synchronized static void doConfigure(LogConfigure logConfigure) {
-		if (null == innerFactory) {
-			bindSl4j();
+	public synchronized static void doConfigure(LogConfigure logConfigure,
+			String appKey) {
+		appKey = StringUtils.defaultIfBlank(appKey, StringUtils.EMPTY);
+		if (null == LOGGER_CONTEXT_LOADERS.get(appKey)) {
+			bindSl4j(appKey);
 		}
-		if(configure){
-			//已经配置configure过
+		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
+		if (loggerContext.isConfigure()) {
+			// 已经配置configure过
 			return;
 		}
+		String systemConfPath;
 		InputStream inputStream = null;
-		String systemConfPath = null;
 		if (null != logConfigure
 				&& StringUtils.isNotBlank(logConfigure.getSystemPropertyKey())) {
 			systemConfPath = logConfigure.getSystemPropertyKey();
@@ -117,17 +109,17 @@ public class LoggerFactory {
 		}
 		if (null != inputStream) {
 			try {
-				Class<?> JoranConfClass = ClassUtils.getClass(innerLoader,
+				Class<?> JoranConfClass = ClassUtils.getClass(loggerContext,
 						"ch.qos.logback.classic.joran.JoranConfigurator");
 				Object JoranConfObj = ConstructorUtils.invokeConstructor(
 						JoranConfClass, ArrayUtils.EMPTY_OBJECT_ARRAY);
 				// 设置logContext
 				MethodUtils.invokeMethod(JoranConfObj, "setContext",
-						innerFactory);
+						loggerContext.getInnerFactory());
 				// 进行Configure
 				MethodUtils.invokeMethod(JoranConfObj, "doConfigure",
 						inputStream);
-				configure=true;
+				loggerContext.setConfigure(true);
 			} catch (Exception e) {
 				throw new RuntimeException("doConfigure logback Error! ", e);
 			} finally {
@@ -142,121 +134,76 @@ public class LoggerFactory {
 		}
 	}
 
-	public static Logger getLogger(String logName) {
-		return getWrapperLogger(logName, logName);
-	}
-
-	public static Logger getLogger(Class<?> clazz) {
-		return getWrapperLogger(clazz, clazz.getName());
+	/**
+	 * 根据logName和appKey获取logger
+	 * @param logName 日志名称
+	 * @param appKey  对应的appKey
+	 * @return
+	 */
+	public static Logger getLogger(String logName, String appKey) {
+		return getWrapperLogger(logName, appKey);
 	}
 
 	/**
+	 * 根据class和appKey获取logger
+	 * @param clazz 需要获取logger对应的class
+	 * @param appKey 对应的appKey
+	 * @return
+	 */
+	public static Logger getLogger(Class<?> clazz, String appKey) {
+		return getWrapperLogger(clazz.getName(), appKey);
+	}
+
+	/*
 	 * SL4J的初始化与log的绑定方法。
 	 */
-	private synchronized static void bindSl4j() {
+	private synchronized static void bindSl4j(String appKey) {
 		try {
-			sl4jLogFactoryClass = ClassUtils.getClass(innerLoader,
+			LoggerContext loggerContext = new LoggerContext();
+			Class<?> sl4jLogFactoryClass = ClassUtils.getClass(loggerContext,
 					"org.slf4j.LoggerFactory");
-			innerFactory = MethodUtils.invokeExactStaticMethod(
+			Object innerFactory = MethodUtils.invokeExactStaticMethod(
 					sl4jLogFactoryClass, "getILoggerFactory",
 					ArrayUtils.EMPTY_OBJECT_ARRAY);
+			loggerContext.setSl4jLogFactoryClass(sl4jLogFactoryClass);
+			loggerContext.setInnerFactory(innerFactory);
+			LOGGER_CONTEXT_LOADERS.put(appKey, loggerContext);
 		} catch (Exception e) {
 			throw new RuntimeException("binding inner sl4j Error! ", e);
 		}
 	}
 
-	/**
+	/*
 	 * 根据给定的对象获取对应的SL4J的包装Logger对象
-	 * 
-	 * @param object
-	 *            getLoger的对象
-	 * @param cacheKey
-	 *            methodCache对应的缓存key
+	 *
+	 * @param loggerName
+	 *            logger名称
+	 *
+	 * @param appKey
+	 *            日志系统的appKey
 	 * @return
 	 */
-	private synchronized static Logger getWrapperLogger(Object object,
-			String loggerName) {
-		if (null == innerFactory) {
+	private synchronized static Logger getWrapperLogger(
+			String loggerName, String appKey) {
+		appKey = StringUtils.defaultIfBlank(appKey, StringUtils.EMPTY);
+		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
+		if (null == loggerContext) {
 			// 如果sl4j没有进行绑定过,先尝试绑定
-			bindSl4j();
+			bindSl4j(appKey);
 		}
-		if (null == logMethod) {
-			// add method cache
-			logMethod = MethodUtils.getMatchingAccessibleMethod(
-					sl4jLogFactoryClass, "getLogger",
-					new Class[] { String.class });
-		}
-		try {
-			Object innerLog = logMethod.invoke(null, loggerName);
-			return new Logger(innerLog, innerLoader);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException(
-					"invoke get inner logger Error! logName: " + loggerName, e);
-		}
+		return new Logger(loggerContext.getInnerLogger(loggerName), loggerContext);
 	}
 
-	private static class LoggerClassLoader extends ClassLoader {
-
-		private final static String SL4J_API_LIB = "loglib/slf4j-api-1.7.6.jlib";
-		private final static String LOGBACK_CLASSIC_LIB = "loglib/logback-classic-1.1.2.jlib";
-		private final static String LOGBACK_CORE_LIB = "loglib/logback-core-1.1.2.jlib";
-		private final static String[] LOGBACK_LIBS = new String[] {
-				SL4J_API_LIB, LOGBACK_CLASSIC_LIB, LOGBACK_CORE_LIB };
-
-		LoggerClassLoader() {
-			// 去掉父的classLoader,防止干扰业务的classLoader
-			super(null);
-		}
-
-		protected Class<?> findClass(String name) throws ClassNotFoundException {
-			Class<?> clazz = null;
-			for (String jarFilePath : LOGBACK_LIBS) {
-				DataInputStream dis = null;
-				try {
-					URL jarUrl = ClassLoader.getSystemClassLoader()
-							.getResource(jarFilePath);
-					JarFile jarFile = new JarFile(new File(jarUrl.toURI()));
-					JarEntry entry = jarFile.getJarEntry(StringUtils.replace(
-							name, ".", "/") + ".class");
-					// 当前JAR找不到重试到下一个
-					if (null == entry) {
-						continue;
-					}
-					dis = new DataInputStream(jarFile.getInputStream(entry));
-					byte[] classBytes = new byte[(int) entry.getSize()];
-					dis.readFully(classBytes);
-					clazz = defineClass(name, classBytes, 0, classBytes.length);
-					if (null != clazz) {
-						break;
-					}
-				} catch (Exception e) {
-					throw new ClassNotFoundException(name, e);
-				} finally {
-					if (dis != null) {
-						try {
-							dis.close();
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-			if (null == clazz) {
-				throw new ClassNotFoundException(name);
-			}
-			return clazz;
-		}
-	}
-
-	public static void main(String[] args)  {
-		LoggerFactory.doConfigure(null);
-		Logger logger = LoggerFactory.getLogger(LoggerFactory.class);
-		logger.setLevel(LogLevel.ERROR);
-		logger.error("error!!");
-		logger.setLevel(LogLevel.WARN);
-		logger.warn("warn!!");
-		logger.setLevel(LogLevel.INFO);
-		logger.info("info!!");
+	public static void main(String[] args) {
+		String metaqAppKey = "metaq";
+		String jwAppKey = "jingwei";
+		LoggerFactory.doConfigure(null, jwAppKey);
+		LoggerFactory.doConfigure(null, metaqAppKey);
+		Logger jwLogger = LoggerFactory.getLogger(LoggerFactory.class, jwAppKey);
+		Logger metaqLogger = LoggerFactory.getLogger(LoggerFactory.class, metaqAppKey);
+		jwLogger.setLevel(LogLevel.ERROR);
+		jwLogger.error("error!!");
+		metaqLogger.setLevel(LogLevel.WARN);
+		metaqLogger.warn("warn!!");
 	}
 }

@@ -30,15 +30,14 @@ import java.util.Map;
 
 public class Logger {
 
+	private final LoggerContext loggerContext;
 	private final Object innerlogback;
-
-	private final ClassLoader innerLoader;
 
 	private final static MethodCache methodCache = new MethodCache(LoggerMethodEnum.values().length);
 
-	public Logger(Object innerLogger, ClassLoader innerLoader) {
-		this.innerlogback = innerLogger;
-		this.innerLoader = innerLoader;
+	public Logger(Object innerlogback, LoggerContext loggerContext) {
+		this.loggerContext = loggerContext;
+		this.innerlogback = innerlogback;
 	}
 
 	public String getName() {
@@ -168,7 +167,7 @@ public class Logger {
 	public void setLevel(LogLevel level) {
 		try {
 			Class<?> levelClass = ClassUtils
-					.getClass(innerLoader, "ch.qos.logback.classic.Level");
+					.getClass(loggerContext, "ch.qos.logback.classic.Level");
 			Object logBackLevel = MethodUtils.invokeStaticMethod(levelClass, "toLevel", level.name());
 			MethodUtils.invokeMethod(innerlogback, "setLevel", logBackLevel);
 		} catch (Exception e) {
