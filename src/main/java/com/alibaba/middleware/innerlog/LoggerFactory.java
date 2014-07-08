@@ -49,6 +49,9 @@ import java.util.Map;
 public class LoggerFactory {
 
 	private static final String SYSTEM_LONGBACK_CONFIG_FILE_KEY = "com.alibaba.inner.logback.config.file";
+
+	private static final String DEFAULT_LONGBACK_CONFIG_FILE = "inner-default-logback.xml";
+
 	private static final Map<String/* appKey */, LoggerContext> LOGGER_CONTEXT_LOADERS = new HashMap<String, LoggerContext>();
 
 	/**
@@ -91,21 +94,36 @@ public class LoggerFactory {
 		}
 		String systemConfPath;
 		InputStream inputStream = null;
+		//确定是否有指定系统优先innerLog的配置文件
 		if (null != logConfigure
 				&& StringUtils.isNotBlank(logConfigure.getSystemPropertyKey())) {
-			systemConfPath = logConfigure.getSystemPropertyKey();
+			//如果Configure指定了系统属性,优先用系统属性
+			systemConfPath = System.getProperty(
+					logConfigure.getSystemPropertyKey(),
+					System.getenv(logConfigure.getSystemPropertyKey()));
+			;
 		} else {
 			systemConfPath = System.getProperty(
 					SYSTEM_LONGBACK_CONFIG_FILE_KEY,
 					System.getenv(SYSTEM_LONGBACK_CONFIG_FILE_KEY));
 		}
+		//如果找到了系统优先的配置尝试加载对应配置文件的inputStream
 		if (StringUtils.isNotBlank(systemConfPath)) {
 			inputStream = LogConfigure
 					.getResourceFromFileSystem(systemConfPath);
 		}
-		// 如果没有指定系统的LOG配置文件路径,用代码中的logConfigure
+		/*
+		* 没有指定优先系统级别配置,或者对应的系统基本配置加载失败用logConfigure
+		* 对象对inner进行Configure
+		 */
 		if (null == inputStream && null != logConfigure) {
 			inputStream = logConfigure.configure();
+		} else {
+			/*
+			*没指定系统级别的日志配置,也没传递logConfigure对象
+			* 使用默认的DEFAULT_LONGBACK_CONFIG_FILE进行Configure
+			*/
+			//inputStream=LogConfigure.getResourceFromClasPath(DEFAULT_LONGBACK_CONFIG_FILE);
 		}
 		if (null != inputStream) {
 			try {
@@ -157,7 +175,7 @@ public class LoggerFactory {
 	/*
 	 * SL4J的初始化与log的绑定方法。
 	 */
-	private synchronized static void bindSl4j(String appKey) {
+	private synchronized static LoggerContext bindSl4j(String appKey) {
 		try {
 			LoggerContext loggerContext = new LoggerContext();
 			Class<?> sl4jLogFactoryClass = ClassUtils.getClass(loggerContext,
@@ -168,6 +186,7 @@ public class LoggerFactory {
 			loggerContext.setSl4jLogFactoryClass(sl4jLogFactoryClass);
 			loggerContext.setInnerFactory(innerFactory);
 			LOGGER_CONTEXT_LOADERS.put(appKey, loggerContext);
+			return loggerContext;
 		} catch (Exception e) {
 			throw new RuntimeException("binding inner sl4j Error! ", e);
 		}
@@ -189,7 +208,7 @@ public class LoggerFactory {
 		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
 		if (null == loggerContext) {
 			// 如果sl4j没有进行绑定过,先尝试绑定
-			bindSl4j(appKey);
+			loggerContext = bindSl4j(appKey);
 		}
 		return new Logger(loggerContext.getInnerLogger(loggerName), loggerContext);
 	}

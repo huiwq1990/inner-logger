@@ -16,7 +16,7 @@ import java.io.InputStream;
  */
 
 public class DefaultLogConfigure extends LogConfigure {
-	private final static String INNER_DEFAULT_CONF = "loglib/inner-default-logback.xml";
+	private final static String INNER_DEFAULT_CONF = "inner-default-logback.xml";
 	private final String resource;
 	private final boolean fileSystem;
 
