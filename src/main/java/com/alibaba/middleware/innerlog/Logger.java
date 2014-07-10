@@ -251,6 +251,8 @@ public class Logger {
 		}
 
 		void put(String cachKey, Method method) {
+			//关闭安全检查,加速反射调用
+			method.setAccessible(true);
 			methodCache.put(cachKey, method);
 		}
 
