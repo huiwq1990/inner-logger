@@ -212,6 +212,8 @@ public class LoggerContext extends ClassLoader {
 			// add method cache
 			logMethod = MethodUtils.getMatchingAccessibleMethod(
 					sl4jLogFactoryClass, "getLogger", new Class[] { String.class });
+			//关闭安全检查加速反射调用
+			logMethod.setAccessible(true);
 		}
 		try {
 			return logMethod.invoke(null, loggerName);
