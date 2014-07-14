@@ -23,6 +23,7 @@ public class LoggerContext extends ClassLoader {
 	 * 内置LogLib的文件名称,该文件其实是个jar
 	 */
 	private final static String LOGBACK_LIB = "logback-assemble-1.1.2.jlb";
+	private final static String LOCK_FILE = "logback-assemble.lock";
 
 	/**
 	 * 将JAR内的innerLib导出到文件系统需要的常量
@@ -32,6 +33,7 @@ public class LoggerContext extends ClassLoader {
 	private final static String OUT_LIB_DIR_NAME = "inner-logger";
 	private final static String OUT_LIB_DIR_PATH = SYSTEM_TMP_DIR + SYSTEM_FILE_SEP + OUT_LIB_DIR_NAME;
 	private final static String OUT_LIB_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP + LOGBACK_LIB;
+	private final static String LOCK_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP + LOCK_FILE;
 
 	/**
 	 * InnerLogger 与appClassLoader桥接用的ClassLoader
@@ -104,6 +106,7 @@ public class LoggerContext extends ClassLoader {
 		//拼装outLib的目录路径
 		File outLogDirFile = new File(OUT_LIB_DIR_PATH);
 		File outLogLibFile = new File(OUT_LIB_PATH);
+		File lockFile = new File(LOCK_PATH);
 		//JVM内Class同步,目的优化JVM内多线程同时调用时导致outLibFile判断不准确
 		synchronized (LoggerContext.class) {
 			//尝试创建下父目录
@@ -124,7 +127,7 @@ public class LoggerContext extends ClassLoader {
 					* 对将要导出写入文件系统的log的lib文件加锁,防止同一时刻其他进程也在入该文件导致
 					* 从而导致可能其他进程中的线程读取未写完整的lib文件
 					*/
-					lock = new FileOutputStream(outLogLibFile).getChannel().lock();
+					lock = new FileOutputStream(lockFile).getChannel().lock();
 					outLibFileOut = new FileOutputStream(outLogLibFile);
 					copyInput2OutPut(innerLogJarFile.getInputStream(entry), outLibFileOut);
 				} catch (IOException e) {
@@ -153,6 +156,8 @@ public class LoggerContext extends ClassLoader {
 						}
 					}
 				}
+			} else {
+
 			}
 		}
 		return outLogLibFile;
@@ -173,6 +178,9 @@ public class LoggerContext extends ClassLoader {
 			dis.readFully(classBytes);
 			clazz = defineClass(name, classBytes, 0, classBytes.length);
 		} catch (IOException e) {
+			//如果加载出错,可能是加载到损坏包尝试删除掉导出的外部LIB文件
+			File outLogLibFile = new File(OUT_LIB_PATH);
+			outLogLibFile.delete();
 			throw new ClassNotFoundException("Inner Logger ClassName: " + name, e);
 		} finally {
 			if (null != jarFile) {
