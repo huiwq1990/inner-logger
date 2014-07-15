@@ -20,7 +20,7 @@ public abstract class LogConfigure {
 	 * @return InputStream Log配置文件的的InputStream
 	 */
 	public abstract InputStream configure();
-	
+
 	/**
 	 * 返回通过系统属性查找logback配置文件路径KEY
 	 * 如果指定在系统属性里指定了logback配置文件将
@@ -32,7 +32,7 @@ public abstract class LogConfigure {
 	public abstract String getSystemPropertyKey();
 
 	public static InputStream getResourceFromClasPath(String resourceName) {
-		return LogConfigure.class.getResourceAsStream(resourceName);
+		return ClassLoader.getSystemResourceAsStream(resourceName);
 	}
 
 	public static InputStream getResourceFromFileSystem(String filePath) {

@@ -36,11 +36,6 @@ public class LoggerContext extends ClassLoader {
 	private final static String LOCK_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP + LOCK_FILE;
 
 	/**
-	 * InnerLogger 与appClassLoader桥接用的ClassLoader
-	 * 用来确定内置inner的jlib和innerLogger所在的libPath
-	 */
-	private final static ClassLoader BRIDGE_CLASS_LOADER = LoggerContext.class.getClassLoader();
-	/**
 	 * method缓存部分,用来加速反射调用
 	 * */
 	private Method logMethod;
@@ -61,7 +56,7 @@ public class LoggerContext extends ClassLoader {
 
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
 		JarFile libJarFile;
-		URL logLibUrl = BRIDGE_CLASS_LOADER.getResource(LOGBACK_LIB);
+		URL logLibUrl = ClassLoader.getSystemResource(LOGBACK_LIB);
 		String libProtocol = logLibUrl.getProtocol();
 		if ("file".equals(libProtocol)) {
 			//在inner-logger工程内部运行,由于加载的是main/
