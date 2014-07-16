@@ -32,7 +32,7 @@ public abstract class LogConfigure {
 	public abstract String getSystemPropertyKey();
 
 	public static InputStream getResourceFromClasPath(String resourceName) {
-		return ClassLoader.getSystemResourceAsStream(resourceName);
+		return Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
 	}
 
 	public static InputStream getResourceFromFileSystem(String filePath) {

@@ -56,7 +56,7 @@ public class LoggerContext extends ClassLoader {
 
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
 		JarFile libJarFile;
-		URL logLibUrl = ClassLoader.getSystemResource(LOGBACK_LIB);
+		URL logLibUrl = Thread.currentThread().getContextClassLoader().getResource(LOGBACK_LIB);
 		String libProtocol = logLibUrl.getProtocol();
 		if ("file".equals(libProtocol)) {
 			//在inner-logger工程内部运行,由于加载的是main/
