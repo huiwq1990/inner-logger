@@ -84,6 +84,10 @@ public class LoggerContext extends ClassLoader {
 			libJarFile = new JarFile(outLogLibFile);
 			return getClassFromJarEntry(name, libJarFile);
 		} catch (Exception e) {
+			//加载失败删除失败的文件,可能是加载到损坏的jar
+			if (null != outLogLibFile) {
+				outLogLibFile.delete();
+			}
 			throw new ClassNotFoundException(
 					"Load Class From OutLib: " + outLogLibFile.getAbsolutePath() + " ClassName: " + name, e);
 		} finally {
@@ -151,8 +155,6 @@ public class LoggerContext extends ClassLoader {
 						}
 					}
 				}
-			} else {
-
 			}
 		}
 		return outLogLibFile;
