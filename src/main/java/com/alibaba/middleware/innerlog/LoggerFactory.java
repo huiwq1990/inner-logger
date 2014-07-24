@@ -83,7 +83,7 @@ public class LoggerFactory {
 	 */
 	public synchronized static void doConfigure(LogConfigure logConfigure,
 			String appKey) {
-		appKey = StringUtils.defaultIfBlank(appKey, StringUtils.EMPTY);
+		appKey = defaultIfBlank(appKey, StringUtils.EMPTY);
 		if (null == LOGGER_CONTEXT_LOADERS.get(appKey)) {
 			bindSl4j(appKey);
 		}
@@ -204,13 +204,17 @@ public class LoggerFactory {
 	 */
 	private synchronized static Logger getWrapperLogger(
 			String loggerName, String appKey) {
-		appKey = StringUtils.defaultIfBlank(appKey, StringUtils.EMPTY);
+		appKey = defaultIfBlank(appKey, StringUtils.EMPTY);
 		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
 		if (null == loggerContext) {
 			// 如果sl4j没有进行绑定过,先尝试绑定
 			loggerContext = bindSl4j(appKey);
 		}
 		return new Logger(loggerContext.getInnerLogger(loggerName), loggerContext);
+	}
+
+	private static String defaultIfBlank(String str, String defaultStr) {
+		return StringUtils.isBlank(str) ? defaultStr : str;
 	}
 
 	public static void main(String[] args) {
