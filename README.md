@@ -11,7 +11,7 @@
     <dependency>
         <groupId>com.alibaba.middleware</groupId>
         <artifactId>inner-logger</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.1-SNAPSHOT</version>
     </dependency>
 
 
@@ -49,9 +49,6 @@
                         inputStream = new ByteArrayInputStream(newConfigContext.getBytes());
                     }
                     return inputStream;
-                }
-                public String getSystemPropertyKey() {
-                     return "jw.logback.config.file";
                 }
             },"jingweiAppkey");
 
