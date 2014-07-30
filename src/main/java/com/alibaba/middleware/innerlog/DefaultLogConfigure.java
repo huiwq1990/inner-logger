@@ -41,9 +41,4 @@ public class DefaultLogConfigure extends LogConfigure {
 		}
 		return inputStream;
 	}
-
-	public String getSystemPropertyKey() {
-		//ON-OP
-		return null;
-	}
 }

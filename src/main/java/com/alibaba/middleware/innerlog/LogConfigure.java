@@ -21,16 +21,6 @@ public abstract class LogConfigure {
 	 */
 	public abstract InputStream configure();
 
-	/**
-	 * 返回通过系统属性查找logback配置文件路径KEY
-	 * 如果指定在系统属性里指定了logback配置文件将
-	 * 优先使用这个文件,通常是为了排查问题方便来通
-	 * 过指定系统属性覆盖日志配置文件
-	 *
-	 * @return String Log配置文件的的InputStream
-	 */
-	public abstract String getSystemPropertyKey();
-
 	public static InputStream getResourceFromClasPath(String resourceName) {
 		return Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
 	}

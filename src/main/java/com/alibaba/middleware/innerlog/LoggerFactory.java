@@ -7,6 +7,7 @@ import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.apache.commons.lang.reflect.MethodUtils;
 
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,9 +49,7 @@ import java.util.Map;
 
 public class LoggerFactory {
 
-	private static final String SYSTEM_LONGBACK_CONFIG_FILE_KEY = "com.alibaba.inner.logback.config.file";
-
-	private static final String DEFAULT_LONGBACK_CONFIG_FILE = "inner-default-logback.xml";
+	private static final String SYSTEM_LONGBACK_CONFIG_KEY_FORMAT = "innerlogger.{0}.logback.file";
 
 	private static final Map<String/* appKey */, LoggerContext> LOGGER_CONTEXT_LOADERS = new HashMap<String, LoggerContext>();
 
@@ -94,19 +93,10 @@ public class LoggerFactory {
 		}
 		String systemConfPath;
 		InputStream inputStream = null;
+
 		//确定是否有指定系统优先innerLog的配置文件
-		if (null != logConfigure
-				&& StringUtils.isNotBlank(logConfigure.getSystemPropertyKey())) {
-			//如果Configure指定了系统属性,优先用系统属性
-			systemConfPath = System.getProperty(
-					logConfigure.getSystemPropertyKey(),
-					System.getenv(logConfigure.getSystemPropertyKey()));
-			;
-		} else {
-			systemConfPath = System.getProperty(
-					SYSTEM_LONGBACK_CONFIG_FILE_KEY,
-					System.getenv(SYSTEM_LONGBACK_CONFIG_FILE_KEY));
-		}
+		String systemConfKey = MessageFormat.format(SYSTEM_LONGBACK_CONFIG_KEY_FORMAT, new Object[] { appKey });
+		systemConfPath = System.getProperty(systemConfKey, System.getenv(systemConfKey));
 		//如果找到了系统优先的配置尝试加载对应配置文件的inputStream
 		if (StringUtils.isNotBlank(systemConfPath)) {
 			inputStream = LogConfigure
@@ -123,7 +113,6 @@ public class LoggerFactory {
 			*没指定系统级别的日志配置,也没传递logConfigure对象
 			* 使用默认的DEFAULT_LONGBACK_CONFIG_FILE进行Configure
 			*/
-			//inputStream=LogConfigure.getResourceFromClasPath(DEFAULT_LONGBACK_CONFIG_FILE);
 		}
 		if (null != inputStream) {
 			try {
