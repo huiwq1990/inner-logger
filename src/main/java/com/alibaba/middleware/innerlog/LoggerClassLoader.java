@@ -18,7 +18,7 @@ import java.util.jar.JarFile;
  * Time: 12:52
  * version 1.0
  */
-public class LoggerContext extends ClassLoader {
+public class LoggerClassLoader extends ClassLoader {
 	/**
 	 * 内置LogLib的文件名称,该文件其实是个jar
 	 */
@@ -45,13 +45,19 @@ public class LoggerContext extends ClassLoader {
 	 */
 	private Object innerFactory;
 	private Class<?> sl4jLogFactoryClass;
+	/**
+	 * classLoader的id,在缓存加速的时候作为key匹配Method的
+	 * cache
+	 */
+	private Integer id;
 
 	// 标记该classLoader对应的log系统是否已经configure过
 	private boolean configure = false;
 
-	protected LoggerContext() {
+	protected LoggerClassLoader(Integer id) {
 		// 去掉父的classLoader,防止干扰业务的classLoader
 		super(null);
+		this.id = id;
 	}
 
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
@@ -107,7 +113,7 @@ public class LoggerContext extends ClassLoader {
 		File outLogLibFile = new File(OUT_LIB_PATH);
 		File lockFile = new File(LOCK_PATH);
 		//JVM内Class同步,目的优化JVM内多线程同时调用时导致outLibFile判断不准确
-		synchronized (LoggerContext.class) {
+		synchronized (LoggerClassLoader.class) {
 			//尝试创建下父目录
 			if (!outLogDirFile.exists()) {
 				outLogDirFile.mkdir();
@@ -251,5 +257,9 @@ public class LoggerContext extends ClassLoader {
 
 	protected void setSl4jLogFactoryClass(Class<?> sl4jLogFactoryClass) {
 		this.sl4jLogFactoryClass = sl4jLogFactoryClass;
+	}
+
+	protected Integer getId() {
+		return id;
 	}
 }

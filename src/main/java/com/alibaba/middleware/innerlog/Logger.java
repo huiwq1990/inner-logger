@@ -1,14 +1,11 @@
 package com.alibaba.middleware.innerlog;
 
-import org.apache.commons.lang.ArrayUtils;
+import com.alibaba.middleware.innerlog.cache.LoggerMethodCache;
+import com.alibaba.middleware.innerlog.cache.LoggerMethodEnum;
 import org.apache.commons.lang.ClassUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.reflect.MethodUtils;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *  内置日志类
@@ -29,14 +26,21 @@ import java.util.Map;
  */
 
 public class Logger {
-
-	private final LoggerContext loggerContext;
+	/**
+	 * 加速反射调用的cache
+	 */
+	private final static LoggerMethodCache methodCache = new LoggerMethodCache();
+	/**
+	 * 加载这个Logger对象对应的classLoader
+	 */
+	private final LoggerClassLoader loggerClassLoader;
+	/**
+	 * 真实的sl4j的Logger对象
+	 */
 	private final Object innerlogback;
 
-	private final static MethodCache methodCache = new MethodCache(LoggerMethodEnum.values().length);
-
-	public Logger(Object innerlogback, LoggerContext loggerContext) {
-		this.loggerContext = loggerContext;
+	public Logger(Object innerlogback, LoggerClassLoader loggerClassLoader) {
+		this.loggerClassLoader = loggerClassLoader;
 		this.innerlogback = innerlogback;
 	}
 
@@ -61,7 +65,7 @@ public class Logger {
 	}
 
 	public void trace(String format, Object... arguments) {
-		this.invokeMethodNoCache(LoggerMethodEnum.TRACE_FORMAT_MANY, format, arguments);
+		this.invokeMethod(LoggerMethodEnum.TRACE_FORMAT_MANY, format, arguments);
 	}
 
 	public void trace(String msg, Throwable t) {
@@ -85,7 +89,7 @@ public class Logger {
 	}
 
 	public void debug(String format, Object... arguments) {
-		this.invokeMethodNoCache(LoggerMethodEnum.DEBUG_FORMAT_MANY, format, arguments);
+		this.invokeMethod(LoggerMethodEnum.DEBUG_FORMAT_MANY, format, arguments);
 	}
 
 	public void debug(String msg, Throwable t) {
@@ -109,7 +113,7 @@ public class Logger {
 	}
 
 	public void info(String format, Object... arguments) {
-		this.invokeMethodNoCache(LoggerMethodEnum.INFO_FORMAT_MANY, format, arguments);
+		this.invokeMethod(LoggerMethodEnum.INFO_FORMAT_MANY, format, arguments);
 	}
 
 	public void info(String msg, Throwable t) {
@@ -133,7 +137,7 @@ public class Logger {
 	}
 
 	public void warn(String format, Object... arguments) {
-		this.invokeMethodNoCache(LoggerMethodEnum.WARN_FORMAT_MANY, format, arguments);
+		this.invokeMethod(LoggerMethodEnum.WARN_FORMAT_MANY, format, arguments);
 	}
 
 	public void warn(String msg, Throwable t) {
@@ -157,7 +161,7 @@ public class Logger {
 	}
 
 	public void error(String format, Object... arguments) {
-		this.invokeMethodNoCache(LoggerMethodEnum.ERROR_FORMAT_MANY, format, arguments);
+		this.invokeMethod(LoggerMethodEnum.ERROR_FORMAT_MANY, format, arguments);
 	}
 
 	public void error(String msg, Throwable t) {
@@ -167,7 +171,7 @@ public class Logger {
 	public void setLevel(LogLevel level) {
 		try {
 			Class<?> levelClass = ClassUtils
-					.getClass(loggerContext, "ch.qos.logback.classic.Level");
+					.getClass(loggerClassLoader, "ch.qos.logback.classic.Level");
 			Object logBackLevel = MethodUtils.invokeStaticMethod(levelClass, "toLevel", level.name());
 			MethodUtils.invokeMethod(innerlogback, "setLevel", logBackLevel);
 		} catch (Exception e) {
@@ -175,146 +179,20 @@ public class Logger {
 		}
 	}
 
-	/*
-	 * 日志方法枚举
-	 */
-	static enum LoggerMethodEnum {
-		GET_NAME("getName()"),
-		IS_TRACE_ENABLED("isTraceEnabled()"),
-		TRACE("trace(String msg)", MethodCache.ONE_STRING_ARRAY),
-		TRACE_FORMAT_ONE("trace(String format, Object arg)", MethodCache.FORMAT_ONE_ARRAY),
-		TRACE_FORMAT_TWO("trace(String format, Object arg1, Object arg2)", MethodCache.FORMAT_TWO_ARRAY),
-		TRACE_THROWABLE("trace(String msg, Throwable t)", MethodCache.THROWABLE_ARRAY),
-
-		IS_DEBUG_ENABLED("isDebugEnabled()"),
-		DEBUG("debug(String msg)", MethodCache.ONE_STRING_ARRAY),
-		DEBUG_FORMAT_ONE("debug(String format, Object arg)", MethodCache.FORMAT_ONE_ARRAY),
-		DEBUG_FORMAT_TWO("debug(String format, Object arg1, Object arg2)", MethodCache.FORMAT_TWO_ARRAY),
-		DEBUG_THROWABLE("debug(String msg, Throwable t)", MethodCache.THROWABLE_ARRAY),
-
-		IS_INFO_ENABLED("isInfoEnabled()"),
-		INFO("info(String msg)", MethodCache.ONE_STRING_ARRAY),
-		INFO_FORMAT_ONE("info(String format, Object arg)", MethodCache.FORMAT_ONE_ARRAY),
-		INFO_FORMAT_TWO("info(String format, Object arg1, Object arg2)", MethodCache.FORMAT_TWO_ARRAY),
-		INFO_THROWABLE("info(String msg, Throwable t)", MethodCache.THROWABLE_ARRAY),
-
-		IS_WARN_ENABLED("isWarnEnabled()"),
-		WARN("warn(String msg)", MethodCache.ONE_STRING_ARRAY),
-		WARN_FORMAT_ONE("warn(String format, Object arg)", MethodCache.FORMAT_ONE_ARRAY),
-		WARN_FORMAT_TWO("warn(String format, Object arg1, Object arg2)", MethodCache.FORMAT_TWO_ARRAY),
-		WARN_THROWABLE("warn(String msg, Throwable t)", MethodCache.THROWABLE_ARRAY),
-
-		IS_ERROR_ENABLED("isErrorEnabled()"),
-		ERROR("error(String msg)", MethodCache.ONE_STRING_ARRAY),
-		ERROR_FORMAT_ONE("error(String format, Object arg)", MethodCache.FORMAT_ONE_ARRAY),
-		ERROR_FORMAT_TWO("error(String format, Object arg1, Object arg2)", MethodCache.FORMAT_TWO_ARRAY),
-		ERROR_THROWABLE("error(String msg, Throwable t)", MethodCache.THROWABLE_ARRAY),
-
-		//no cache methods
-		TRACE_FORMAT_MANY("trace(String format, Object... arguments)"),
-		DEBUG_FORMAT_MANY("debug(String format, Object... arguments)"),
-		INFO_FORMAT_MANY("info(String format, Object... arguments)"),
-		WARN_FORMAT_MANY("warn(String format, Object... arguments)"),
-		ERROR_FORMAT_MANY("error(String format, Object... arguments)");
-
-		private final String mKey;
-		private final String mName;
-		private final Class<?>[] parmClassTypes;
-
-		LoggerMethodEnum(String methodKey) {
-			this.mKey = methodKey;
-			this.parmClassTypes = ArrayUtils.EMPTY_CLASS_ARRAY;
-			this.mName = StringUtils.substringBeforeLast(methodKey, "(");
-		}
-
-		LoggerMethodEnum(String methodKey, Class<?>[] parmClassTypes) {
-			this.mKey = methodKey;
-			this.parmClassTypes = parmClassTypes;
-			this.mName = StringUtils.substringBeforeLast(methodKey, "(");
-		}
-	}
-
-	/*
-	 * 日志方法的缓存,缓存method来加速反射调用
-	 */
-	static class MethodCache {
-
-		final static Class<?>[] ONE_STRING_ARRAY = new Class[] { String.class };
-		final static Class<?>[] FORMAT_ONE_ARRAY = new Class[] { String.class, Object.class };
-		final static Class<?>[] FORMAT_TWO_ARRAY = new Class[] { String.class, Object.class, Object.class };
-		final static Class<?>[] THROWABLE_ARRAY = new Class[] { String.class, Throwable.class };
-
-		private Map<String, Method> methodCache;
-
-		MethodCache(int cacheSize) {
-			methodCache = new HashMap<String, Method>(cacheSize);
-		}
-
-		void put(String cachKey, Method method) {
-			//关闭安全检查,加速反射调用
-			method.setAccessible(true);
-			methodCache.put(cachKey, method);
-		}
-
-		void put(String cachKey, Class<?> clazz, String methodName, Class<?>[] parameterTypes) {
-			Method method = MethodUtils.getMatchingAccessibleMethod(clazz, methodName, parameterTypes);
-			methodCache.put(cachKey, method);
-		}
-
-		Object invoke(String cachKey, Object obj) {
-			return invoke(cachKey, obj, ArrayUtils.EMPTY_OBJECT_ARRAY);
-		}
-
-		Object invokeStatic(String cachKey) {
-			return invoke(cachKey, null, ArrayUtils.EMPTY_OBJECT_ARRAY);
-		}
-
-		Object invokeStatic(String cachKey, Object... args) {
-			return invoke(cachKey, null, args);
-		}
-
-		boolean containsKey(String cacheKey) {
-			return methodCache.containsKey(cacheKey);
-		}
-
-		Object invoke(String cachKey, Object obj, Object... args) {
-			Method method = methodCache.get(cachKey);
-			if (null == method) {
-				throw new RuntimeException("not find method cache maybe not init put cacheKey: " + cachKey);
-			}
-			try {
-				return method.invoke(obj, args);
-			} catch (Throwable e) {
-				throw new RuntimeException("invoke method Error ! cacheKey: " + cachKey, e);
-			}
-		}
-	}
-
 	private Object invokeMethod(LoggerMethodEnum methodEnum, Object... arguments) {
+		Integer classLoaderId = this.loggerClassLoader.getId();
 		try {
-			if (!methodCache.containsKey(methodEnum.mKey)) {
-				methodCache.put(methodEnum.mKey, this.innerlogback.getClass(), methodEnum.mName,
-						methodEnum.parmClassTypes);
+			if (!methodCache.containsKey(classLoaderId, methodEnum.getmKey())) {
+				methodCache.put(classLoaderId, methodEnum.getmKey(), this.innerlogback.getClass(),
+						methodEnum.getmName(),
+						methodEnum.getParmClassTypes());
 			}
-			return methodCache.invoke(methodEnum.mKey, this.innerlogback, arguments);
+			return methodCache.invoke(classLoaderId, methodEnum.getmKey(), this.innerlogback, arguments);
 		} catch (Exception e) {
 			e.printStackTrace();
 			StringBuilder sb = new StringBuilder("invokeMethod Error! ");
 			sb.append(" class: ").append(this.innerlogback.getClass());
-			sb.append(" method: ").append(methodEnum.mKey);
-			sb.append(" arguments: ").append(Arrays.toString(arguments));
-			throw new RuntimeException(sb.toString(), e);
-		}
-	}
-
-	private Object invokeMethodNoCache(LoggerMethodEnum methodEnum, Object... arguments) {
-		try {
-			return MethodUtils.invokeMethod(this.innerlogback, methodEnum.mName, arguments);
-		} catch (Exception e) {
-			e.printStackTrace();
-			StringBuilder sb = new StringBuilder("invokeMethodNoCache Error! ");
-			sb.append(" class: ").append(this.innerlogback.getClass());
-			sb.append(" method: ").append(methodEnum.mKey);
+			sb.append(" method: ").append(methodEnum.getmKey());
 			sb.append(" arguments: ").append(Arrays.toString(arguments));
 			throw new RuntimeException(sb.toString(), e);
 		}

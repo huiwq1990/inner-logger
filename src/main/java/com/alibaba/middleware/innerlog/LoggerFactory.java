@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 日志工厂类,采用日志框架sl4j和日志系统logback
@@ -49,9 +50,11 @@ import java.util.Map;
 
 public class LoggerFactory {
 
+	private static AtomicInteger CLASS_LOADER_ID = new AtomicInteger(0);
+
 	private static final String SYSTEM_LONGBACK_CONFIG_KEY_FORMAT = "innerlogger.{0}.logback.file";
 
-	private static final Map<String/* appKey */, LoggerContext> LOGGER_CONTEXT_LOADERS = new HashMap<String, LoggerContext>();
+	private static final Map<String/* appKey */, LoggerClassLoader> LOGGER_CONTEXT_LOADERS = new HashMap<String, LoggerClassLoader>();
 
 	/**
 	 * 该方法适用于直接给定classPath下logback配置文件classpath路径名称 配置文件来对日志做Configure
@@ -86,8 +89,8 @@ public class LoggerFactory {
 		if (null == LOGGER_CONTEXT_LOADERS.get(appKey)) {
 			bindSl4j(appKey);
 		}
-		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
-		if (loggerContext.isConfigure()) {
+		LoggerClassLoader loggerClassLoader = LOGGER_CONTEXT_LOADERS.get(appKey);
+		if (loggerClassLoader.isConfigure()) {
 			// 已经配置configure过
 			return;
 		}
@@ -116,17 +119,17 @@ public class LoggerFactory {
 		}
 		if (null != inputStream) {
 			try {
-				Class<?> JoranConfClass = ClassUtils.getClass(loggerContext,
+				Class<?> JoranConfClass = ClassUtils.getClass(loggerClassLoader,
 						"ch.qos.logback.classic.joran.JoranConfigurator");
 				Object JoranConfObj = ConstructorUtils.invokeConstructor(
 						JoranConfClass, ArrayUtils.EMPTY_OBJECT_ARRAY);
 				// 设置logContext
 				MethodUtils.invokeMethod(JoranConfObj, "setContext",
-						loggerContext.getInnerFactory());
+						loggerClassLoader.getInnerFactory());
 				// 进行Configure
 				MethodUtils.invokeMethod(JoranConfObj, "doConfigure",
 						inputStream);
-				loggerContext.setConfigure(true);
+				loggerClassLoader.setConfigure(true);
 			} catch (Exception e) {
 				throw new RuntimeException("doConfigure logback Error! ", e);
 			} finally {
@@ -164,18 +167,18 @@ public class LoggerFactory {
 	/*
 	 * SL4J的初始化与log的绑定方法。
 	 */
-	private synchronized static LoggerContext bindSl4j(String appKey) {
+	private synchronized static LoggerClassLoader bindSl4j(String appKey) {
 		try {
-			LoggerContext loggerContext = new LoggerContext();
-			Class<?> sl4jLogFactoryClass = ClassUtils.getClass(loggerContext,
+			LoggerClassLoader loggerClassLoader = new LoggerClassLoader(CLASS_LOADER_ID.getAndIncrement());
+			Class<?> sl4jLogFactoryClass = ClassUtils.getClass(loggerClassLoader,
 					"org.slf4j.LoggerFactory");
 			Object innerFactory = MethodUtils.invokeExactStaticMethod(
 					sl4jLogFactoryClass, "getILoggerFactory",
 					ArrayUtils.EMPTY_OBJECT_ARRAY);
-			loggerContext.setSl4jLogFactoryClass(sl4jLogFactoryClass);
-			loggerContext.setInnerFactory(innerFactory);
-			LOGGER_CONTEXT_LOADERS.put(appKey, loggerContext);
-			return loggerContext;
+			loggerClassLoader.setSl4jLogFactoryClass(sl4jLogFactoryClass);
+			loggerClassLoader.setInnerFactory(innerFactory);
+			LOGGER_CONTEXT_LOADERS.put(appKey, loggerClassLoader);
+			return loggerClassLoader;
 		} catch (Exception e) {
 			throw new RuntimeException("binding inner sl4j Error! ", e);
 		}
@@ -194,12 +197,12 @@ public class LoggerFactory {
 	private synchronized static Logger getWrapperLogger(
 			String loggerName, String appKey) {
 		appKey = defaultIfBlank(appKey, StringUtils.EMPTY);
-		LoggerContext loggerContext = LOGGER_CONTEXT_LOADERS.get(appKey);
-		if (null == loggerContext) {
+		LoggerClassLoader loggerClassLoader = LOGGER_CONTEXT_LOADERS.get(appKey);
+		if (null == loggerClassLoader) {
 			// 如果sl4j没有进行绑定过,先尝试绑定
-			loggerContext = bindSl4j(appKey);
+			loggerClassLoader = bindSl4j(appKey);
 		}
-		return new Logger(loggerContext.getInnerLogger(loggerName), loggerContext);
+		return new Logger(loggerClassLoader.getInnerLogger(loggerName), loggerClassLoader);
 	}
 
 	private static String defaultIfBlank(String str, String defaultStr) {
@@ -213,8 +216,9 @@ public class LoggerFactory {
 		LoggerFactory.doConfigure(null, metaqAppKey);
 		Logger jwLogger = LoggerFactory.getLogger(LoggerFactory.class, jwAppKey);
 		Logger metaqLogger = LoggerFactory.getLogger(LoggerFactory.class, metaqAppKey);
+		jwLogger.warn("warn {},{},{},{},{}", new Object[] { "1", "2", "3", "4", "5" });
 		jwLogger.setLevel(LogLevel.ERROR);
-		jwLogger.error("error!!");
+		jwLogger.error("error {},{},{},{},{}", "1", "2", "3", "4", "5");
 		metaqLogger.setLevel(LogLevel.WARN);
 		metaqLogger.warn("warn!!");
 	}
