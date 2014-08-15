@@ -1,7 +1,7 @@
 介绍
 ===
 
-采用ClassLoader隔离，导入内置的sl4j和logback日志系统。确保绝不与相同JVM里其他的日志系统冲突。支持指定独立的logback的配置文件进行Configure,不用担心配置文件冲突问题。
+采用ClassLoader隔离，导入内置的sl4j和logback日志系统。确保绝不与相同JVM里其他的日志系统冲突(即使系统没有任何日志系统都可以保证日志可以输出)。支持指定独立的logback的配置文件进行Configure,不用担心配置文件冲突问题。
 相同JVM中多个innerLogger通过appKey进行隔离，各自Configure也互相不影响
 
 使用
