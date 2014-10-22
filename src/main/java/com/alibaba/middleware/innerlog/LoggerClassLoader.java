@@ -23,6 +23,7 @@ public class LoggerClassLoader extends ClassLoader {
 	 * 内置LogLib的文件名称,该文件其实是个jar
 	 */
 	private final static String LOGBACK_LIB = "logback-assemble-1.1.2.jlb";
+	private final static long LOGBACK_LIB_CHECK_LENGTH = 724411;
 	private final static String LOCK_FILE = "logback-assemble.lock";
 
 	/**
@@ -66,8 +67,9 @@ public class LoggerClassLoader extends ClassLoader {
 		String libProtocol = logLibUrl.getProtocol();
 		if ("file".equals(libProtocol)) {
 			//在inner-logger工程内部运行,由于加载的是main/
+			File libFile = new File(logLibUrl.getFile());
 			try {
-				libJarFile = new JarFile(new File(logLibUrl.getFile()));
+				libJarFile = new JarFile(libFile);
 			} catch (IOException e) {
 				throw new ClassNotFoundException("inner Logger className: " + name, e);
 			}
@@ -86,6 +88,16 @@ public class LoggerClassLoader extends ClassLoader {
 	private Class<?> getaClassFromOutLib(String name, String libPath) throws ClassNotFoundException {
 		JarFile libJarFile = null;
 		File outLogLibFile = exportInnerLib2Local(libPath);
+		long outFileLength = outLogLibFile.length();
+		//文件大小检查
+		if (LOGBACK_LIB_CHECK_LENGTH != outFileLength) {
+			if (null != outLogLibFile) {
+				outLogLibFile.delete();
+			}
+			throw new ClassNotFoundException(
+					"Out Lib File Error remove Lib ! correct length: " + LOGBACK_LIB_CHECK_LENGTH + " error length: "
+							+ outFileLength + " outPath: " + outLogLibFile.getAbsolutePath());
+		}
 		try {
 			libJarFile = new JarFile(outLogLibFile);
 			return getClassFromJarEntry(name, libJarFile);
