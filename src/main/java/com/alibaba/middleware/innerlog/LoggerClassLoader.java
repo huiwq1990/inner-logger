@@ -94,9 +94,16 @@ public class LoggerClassLoader extends ClassLoader {
 			if (null != outLogLibFile) {
 				outLogLibFile.delete();
 			}
-			throw new ClassNotFoundException(
-					"Out Lib File Error remove Lib ! correct length: " + LOGBACK_LIB_CHECK_LENGTH + " error length: "
-							+ outFileLength + " outPath: " + outLogLibFile.getAbsolutePath());
+			//第一次检查文件损坏,尝试重新再导出一次
+			outLogLibFile = exportInnerLib2Local(libPath);
+			outFileLength = outLogLibFile.length();
+			//连续两次导出失败,抛异常!
+			if (LOGBACK_LIB_CHECK_LENGTH != outFileLength) {
+				throw new ClassNotFoundException(
+						"Out Lib File Error remove Lib ! correct length: " + LOGBACK_LIB_CHECK_LENGTH
+								+ " error length: "
+								+ outFileLength + " outPath: " + outLogLibFile.getAbsolutePath());
+			}
 		}
 		try {
 			libJarFile = new JarFile(outLogLibFile);
