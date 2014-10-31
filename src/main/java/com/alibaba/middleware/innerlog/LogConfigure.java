@@ -1,6 +1,13 @@
 package com.alibaba.middleware.innerlog;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 
 /**
  * 日志系统configure基础类，由具体实现类根据日志系统类型

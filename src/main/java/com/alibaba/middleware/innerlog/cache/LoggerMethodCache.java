@@ -1,12 +1,12 @@
 package com.alibaba.middleware.innerlog.cache;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.reflect.MethodUtils;
-
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.alibaba.middleware.innerlog.util.ArrayUtils;
+import com.alibaba.middleware.innerlog.util.MethodUtils;
 
 /**
  * Logger的反射调用加速的Cache

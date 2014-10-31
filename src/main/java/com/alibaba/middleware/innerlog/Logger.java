@@ -1,11 +1,11 @@
 package com.alibaba.middleware.innerlog;
 
+import java.util.Arrays;
+
 import com.alibaba.middleware.innerlog.cache.LoggerMethodCache;
 import com.alibaba.middleware.innerlog.cache.LoggerMethodEnum;
-import org.apache.commons.lang.ClassUtils;
-import org.apache.commons.lang.reflect.MethodUtils;
-
-import java.util.Arrays;
+import com.alibaba.middleware.innerlog.util.ClassUtils;
+import com.alibaba.middleware.innerlog.util.MethodUtils;
 
 /**
  *  内置日志类

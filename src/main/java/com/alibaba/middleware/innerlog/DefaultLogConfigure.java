@@ -1,8 +1,8 @@
 package com.alibaba.middleware.innerlog;
 
-import org.apache.commons.lang.StringUtils;
-
 import java.io.InputStream;
+
+import com.alibaba.middleware.innerlog.util.StringUtils;
 
 /**
  * 已知LOG系统的Configure类,用该类的前提是确定JVM中的日志系统

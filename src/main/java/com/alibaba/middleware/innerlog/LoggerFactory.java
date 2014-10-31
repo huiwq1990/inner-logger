@@ -1,16 +1,16 @@
 package com.alibaba.middleware.innerlog;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.ClassUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.reflect.ConstructorUtils;
-import org.apache.commons.lang.reflect.MethodUtils;
-
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.alibaba.middleware.innerlog.util.ArrayUtils;
+import com.alibaba.middleware.innerlog.util.ClassUtils;
+import com.alibaba.middleware.innerlog.util.ConstructorUtils;
+import com.alibaba.middleware.innerlog.util.MethodUtils;
+import com.alibaba.middleware.innerlog.util.StringUtils;
 
 /**
  * 日志工厂类,采用日志框架sl4j和日志系统logback

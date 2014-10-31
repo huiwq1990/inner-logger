@@ -1,7 +1,8 @@
 package com.alibaba.middleware.innerlog.cache;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import com.alibaba.middleware.innerlog.util.ArrayUtils;
+import com.alibaba.middleware.innerlog.util.StringUtils;
+
 
 /**
  * sl4j对外暴露的方法名枚举类,关联加速反射调用的method的key
