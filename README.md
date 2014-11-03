@@ -11,7 +11,7 @@
     <dependency>
         <groupId>com.alibaba.middleware</groupId>
         <artifactId>inner-logger</artifactId>
-        <version>1.3</version>
+        <version>1.4</version>
     </dependency>
 
 
