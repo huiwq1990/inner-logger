@@ -32,17 +32,12 @@ public class LoggerClassLoader extends ClassLoader {
 	/**
 	 * 将JAR内的innerLib导出到文件系统需要的常量
 	 */
-	private final static String SYSTEM_TMP_DIR = System
-			.getProperty("java.io.tmpdir");
-	private final static String SYSTEM_FILE_SEP = System
-			.getProperty("file.separator");
+	private final static String SYSTEM_TMP_DIR = System.getProperty("java.io.tmpdir");
+	private final static String SYSTEM_FILE_SEP = System.getProperty("file.separator");
 	private final static String OUT_LIB_DIR_NAME = "inner-logger";
-	private final static String OUT_LIB_DIR_PATH = SYSTEM_TMP_DIR
-			+ SYSTEM_FILE_SEP + OUT_LIB_DIR_NAME;
-	private final static String OUT_LIB_PATH = OUT_LIB_DIR_PATH
-			+ SYSTEM_FILE_SEP + LOGBACK_LIB;
-	private final static String LOCK_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP
-			+ LOCK_FILE;
+	private final static String OUT_LIB_DIR_PATH = SYSTEM_TMP_DIR+ SYSTEM_FILE_SEP + OUT_LIB_DIR_NAME;
+	private final static String OUT_LIB_PATH = OUT_LIB_DIR_PATH+ SYSTEM_FILE_SEP + LOGBACK_LIB;
+	private final static String LOCK_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP+ LOCK_FILE;
 
 	/**
 	 * method缓存部分,用来加速反射调用
@@ -86,8 +81,11 @@ public class LoggerClassLoader extends ClassLoader {
 		} else if ("jar".equals(libProtocol)) {
 			// 获取inner-loger的jar 的外部File 绝对路径
 			String innerLoggerPath = StringUtils.substringBeforeLast(
-					StringUtils.substringAfter(logLibUrl.toString(),
-							"jar:file:"), "!");
+					StringUtils.substringAfter(logLibUrl.toString(),"jar:file:"), "!");
+			return getaClassFromOutLib(name, innerLoggerPath);
+		} else if ("vfs".equals(libProtocol)) {
+			//这里可能是jboss 的VFS加载,File的路径就是绝对路径,直接获取到INNER的JAR并且导出内部logback
+			String innerLoggerPath=StringUtils.substringBeforeLast(logLibUrl.getFile(), SYSTEM_FILE_SEP);;
 			return getaClassFromOutLib(name, innerLoggerPath);
 		} else {
 			// 考虑到lib加载方式要么是本地class文件,要么是本地jar方式,其他如ftp, http, nntp等网络的方式不支持
