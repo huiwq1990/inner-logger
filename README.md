@@ -2,16 +2,17 @@
 ===
 
 采用ClassLoader隔离，导入内置的sl4j和logback日志系统。确保绝不与相同JVM里其他的日志系统冲突(即使系统没有任何日志系统都可以保证日志可以输出)。支持指定独立的logback的配置文件进行Configure,不用担心配置文件冲突问题。
-相同JVM中多个innerLogger通过appKey进行隔离，各自Configure也互相不影响。
-
-适合各种客户端的程序，解决客户端部署到不同系统中可能出现的其他日志系统导致的日志冲突或者配置冲突等问题。（inner-logger 能做到的就是绝对不会因为inner-logger导致日志冲突，并且确保使用inner-logger的日志配置也绝对不会冲突）
+相同JVM中多个innerLogger通过appKey进行隔离，各自Configure也互相不影响
 
 使用
 ===
 引入依赖：
 
-方式1：将打包后的inner-logger的jar 放到CLASSPATH中
-方式2：将inner-logger deploy到maven仓库中
+    <dependency>
+        <groupId>com.alibaba.middleware</groupId>
+        <artifactId>inner-logger</artifactId>
+        <version>1.5</version>
+    </dependency>
 
 
 * 第一步 指定logback配置文件或者给出LogConfigure 具体实现类初始化日志系统（非必须如不指定会使用内置的loback配置文件）
