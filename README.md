@@ -6,13 +6,7 @@
 
 使用
 ===
-引入依赖：
-
-    <dependency>
-        <groupId>com.alibaba.middleware</groupId>
-        <artifactId>inner-logger</artifactId>
-        <version>1.5</version>
-    </dependency>
+引入MAVEN依赖：
 
 
 * 第一步 指定logback配置文件或者给出LogConfigure 具体实现类初始化日志系统（非必须如不指定会使用内置的loback配置文件）
