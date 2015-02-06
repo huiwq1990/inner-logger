@@ -32,9 +32,9 @@ public class LoggerClassLoader extends ClassLoader {
 	/**
 	 * 将JAR内的innerLib导出到文件系统需要的常量
 	 */
-	private final static String SYSTEM_TMP_DIR = System.getProperty("java.io.tmpdir");
+	private final static String SYSTEM_TMP_DIR = System.getProperty("user.dir");
 	private final static String SYSTEM_FILE_SEP = System.getProperty("file.separator");
-	private final static String OUT_LIB_DIR_NAME = "inner-logger";
+	private final static String OUT_LIB_DIR_NAME = ".inner-logger";
 	private final static String OUT_LIB_DIR_PATH = SYSTEM_TMP_DIR+ SYSTEM_FILE_SEP + OUT_LIB_DIR_NAME;
 	private final static String OUT_LIB_PATH = OUT_LIB_DIR_PATH+ SYSTEM_FILE_SEP + LOGBACK_LIB;
 	private final static String LOCK_PATH = OUT_LIB_DIR_PATH + SYSTEM_FILE_SEP+ LOCK_FILE;
