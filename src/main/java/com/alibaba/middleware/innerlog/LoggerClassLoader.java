@@ -72,12 +72,15 @@ public class LoggerClassLoader extends ClassLoader {
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
 		JarFile libJarFile;
 		URL logLibUrl = Thread.currentThread().getContextClassLoader().getResource(LOGBACK_LIB);
+		/**
+		 *如果系统参数指定了inner-logger的jar 路径直接使用系统参数里设置的路径,主要是为了解决按照常规加载方法不适用的情况。
+		 */
 		if(StringUtils.isNotBlank(SYSTEM_INNER_JAR)){
 			String libPath= "file:"+SYSTEM_INNER_JAR+"!/"+LOGBACK_LIB;
 			try{
 				logLibUrl=new URL("jar","",libPath);
 			}catch (MalformedURLException e){
-				throw  new ClassNotFoundException("load -DinnerLoggerLib error! path: "+SYSTEM_INNER_JAR +" className: "+ name, e);
+				throw  new ClassNotFoundException("load -DinnerLoggerJar error! path: "+SYSTEM_INNER_JAR +" className: "+ name, e);
 			}
 		}
 		String libProtocol = logLibUrl.getProtocol();
