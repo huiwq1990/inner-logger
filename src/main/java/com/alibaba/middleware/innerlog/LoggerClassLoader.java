@@ -293,7 +293,6 @@ public class LoggerClassLoader extends ClassLoader {
 		try {
 			return logMethod.invoke(null, loggerName);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RuntimeException(
 					"invoke get inner logger Error! logName: " + loggerName, e);
 		}
