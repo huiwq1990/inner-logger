@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.FileLock;
 import java.util.jar.JarEntry;
@@ -28,6 +29,11 @@ public class LoggerClassLoader extends ClassLoader {
 	private final static String LOGBACK_LIB = "logback-assemble-1.1.2.jlb";
 	private final static long LOGBACK_LIB_CHECK_LENGTH = 724411;
 	private final static String LOCK_FILE = "logback-assemble.lock";
+	/**
+	 * 极端情况下某些系统的jar 加载方式特殊,如spring-boot,那么可以通过JVM指定
+	 * -DinnerLoggerJar=xxxx/xxxx/inner-logger-1.5.jar 方式指定加载路径
+	 */
+	private final static String SYSTEM_INNER_JAR=System.getProperty("innerLoggerJar");
 
 	/**
 	 * 将JAR内的innerLib导出到文件系统需要的常量
@@ -65,8 +71,15 @@ public class LoggerClassLoader extends ClassLoader {
 
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
 		JarFile libJarFile;
-		URL logLibUrl = Thread.currentThread().getContextClassLoader()
-				.getResource(LOGBACK_LIB);
+		URL logLibUrl = Thread.currentThread().getContextClassLoader().getResource(LOGBACK_LIB);
+		if(StringUtils.isNotBlank(SYSTEM_INNER_JAR)){
+			String libPath= "file:"+SYSTEM_INNER_JAR+"!/"+LOGBACK_LIB;
+			try{
+				logLibUrl=new URL("jar","",libPath);
+			}catch (MalformedURLException e){
+				throw  new ClassNotFoundException("load -DinnerLoggerLib error! path: "+SYSTEM_INNER_JAR +" className: "+ name, e);
+			}
+		}
 		String libProtocol = logLibUrl.getProtocol();
 		if ("file".equals(libProtocol)) {
 			// 在inner-logger工程内部运行,由于加载的是main/
