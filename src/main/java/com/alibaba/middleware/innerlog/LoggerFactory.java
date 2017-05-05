@@ -121,6 +121,9 @@ public class LoggerFactory {
 			try {
 				Class<?> JoranConfClass = ClassUtils.getClass(loggerClassLoader,
 						"ch.qos.logback.classic.joran.JoranConfigurator");
+				// 重新设置LoggerContext
+				MethodUtils.invokeMethod( loggerClassLoader.getInnerFactory(), "reset",
+						ArrayUtils.EMPTY_OBJECT_ARRAY);
 				Object JoranConfObj = ConstructorUtils.invokeConstructor(
 						JoranConfClass, ArrayUtils.EMPTY_OBJECT_ARRAY);
 				// 设置logContext
